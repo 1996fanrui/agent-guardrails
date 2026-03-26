@@ -27,6 +27,8 @@ Decide `language` first:
 - You may fall back to `language: script` only when the hook has zero third-party dependencies, the execution environment is controlled, and `python3` is guaranteed.
 - A `.py` filename is not a reason to choose `language: script`; the deciding factor is environment ownership, not file extension.
 - If consumers may use a non-Python repository or machines without Python preinstalled, `language: python` is mandatory.
+- Before switching a shared hook repository to `language: python`, make the repository installable for `pip install .` with `pyproject.toml` or `setup.py`.
+- In `agent-guardrails`, `.pre-commit-hooks.yaml` is linted to reject Python entrypoints that do not declare `language: python`.
 
 When adding or migrating a hook, use this order of decisions:
 
@@ -135,13 +137,14 @@ If a hook needs project-level semantics, such as "check backend runtime only, no
 2. Decide `language` first: shared Python hooks default to `python`, and `script` is allowed only for explicit exceptions
 3. Implement the script as a file-list consumer that reads only `sys.argv[1:]`
 4. If `language: script` is chosen, set the executable bit with `chmod +x <script>` and `git update-index --chmod=+x <script>`
-5. Add or update the hook definition in `.pre-commit-hooks.yaml`, including `language`, `types`, `types_or`, and `exclude`
-6. If the script needs same-directory imports, use `sys.path.insert(0, str(Path(__file__).parent))`
-7. Run positive validation: an in-scope violation must fail
-8. Run negative validation: excluded paths, test directories, or non-target file types must not be reported
-9. If `language: python` is used, validate that pre-commit can create the runtime environment successfully
-10. Prefer `pre-commit try-repo /home/fanrui/code/agent-guardrails <hook-id> --all-files` for realistic hook validation
-11. Only commit, push, or update the consumer repository `rev` when the user explicitly asks
+5. Path-based script entrypoints must be executable even when `language: python` is used
+6. Add or update the hook definition in `.pre-commit-hooks.yaml`, including `language`, `types`, `types_or`, and `exclude`
+7. If the script needs same-directory imports, use `sys.path.insert(0, str(Path(__file__).parent))`
+8. Run positive validation: an in-scope violation must fail
+9. Run negative validation: excluded paths, test directories, or non-target file types must not be reported
+10. If `language: python` is used, validate that pre-commit can create the runtime environment successfully
+11. Prefer `pre-commit try-repo /home/fanrui/code/agent-guardrails <hook-id> --all-files` for realistic hook validation
+12. Only commit, push, or update the consumer repository `rev` when the user explicitly asks
 
 ## Extra Requirements For Migrating Legacy Hooks
 

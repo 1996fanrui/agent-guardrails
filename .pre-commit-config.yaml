@@ -15,5 +15,12 @@ repos:
       - id: lint-no-chinese
         name: No Chinese characters in source
         entry: general/lint_no_chinese.py
-        language: script
+        language: python
         exclude: '(^|/)(\.venv|node_modules|dist|build|__pycache__|requirements)(/|$)|(^|/)(AGENTS|CLAUDE)\.md$'
+      - id: lint-pre-commit-hook-languages
+        name: Pre-commit hook language selection
+        entry: general/lint_pre_commit_hook_languages.py
+        language: python
+        types: [yaml]
+        files: ^\.pre-commit-(?:config|hooks)\.yaml$
+        exclude: '^$'
