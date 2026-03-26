@@ -9,3 +9,12 @@ repos:
       - id: check-added-large-files
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
+  - repo: .
+    rev: HEAD
+    hooks:
+      - id: lint-shell-portability
+      - id: lint-no-chinese
+      - id: lint-file-line-count
+      - id: lint-backend-bare-dict
+      - id: lint-enum-redundant-string
+      - id: lint-pre-commit-hook-languages
