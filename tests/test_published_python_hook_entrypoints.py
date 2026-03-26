@@ -8,6 +8,8 @@ import yaml
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SELF_CHECK_REPO = "."
+SELF_CHECK_REV = "HEAD"
 
 # Directories that are almost universally git-ignored and therefore never
 # seen by pre-commit.  Listing them in ``exclude`` is redundant noise.
@@ -33,6 +35,13 @@ def _load_project_scripts() -> dict[str, str]:
     with (REPO_ROOT / "pyproject.toml").open("rb") as file_obj:
         pyproject = tomllib.load(file_obj)
     return pyproject["project"]["scripts"]
+
+
+def _load_self_check_config() -> dict[str, object]:
+    with (REPO_ROOT / ".pre-commit-config.yaml").open(encoding="utf-8") as file_obj:
+        config = yaml.safe_load(file_obj)
+    assert isinstance(config, dict)
+    return config
 
 
 def _extract_alternation_names(pattern: str) -> set[str]:
@@ -95,3 +104,32 @@ def test_published_python_hooks_use_project_scripts_entrypoints() -> None:
             f"Hook '{hook_id}' must use a console_scripts command name, not a shell command. "
             f"Found entry '{entry}'."
         )
+
+
+def test_repository_self_check_config_uses_current_repo_hooks() -> None:
+    manifest = _load_hook_manifest()
+    config = _load_self_check_config()
+    repos = config.get("repos")
+    assert isinstance(repos, list), "Expected .pre-commit-config.yaml to define a repos list."
+    expected_hooks = [{"id": hook["id"]} for hook in manifest]
+
+    self_check_repo = None
+    for repo_config in repos:
+        assert isinstance(repo_config, dict), "Each repo config must be a mapping."
+        if repo_config.get("repo") == SELF_CHECK_REPO:
+            self_check_repo = repo_config
+            break
+
+    assert self_check_repo is not None, (
+        "Expected .pre-commit-config.yaml to consume this repository's published hooks "
+        "through repo '.'."
+    )
+    assert self_check_repo == {
+        "repo": SELF_CHECK_REPO,
+        "rev": SELF_CHECK_REV,
+        "hooks": expected_hooks,
+    }, (
+        "Expected .pre-commit-config.yaml self-checks to use the repository manifest "
+        "path exactly: repo '.', rev 'HEAD', and hooks declared as id-only entries. "
+        f"Found {self_check_repo!r}."
+    )

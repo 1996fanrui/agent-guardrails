@@ -8,11 +8,12 @@ A [pre-commit](https://pre-commit.com/) hook repository providing custom lints t
 
 GitHub Actions follows the same thin-wrapper pattern used by `pre-commit` and `pre-commit-hooks`: the workflow delegates execution to `tox`, and `tox` owns the repository validation contract.
 
-The test matrix checks the real consumer path with `pre-commit try-repo`, not just direct script execution. That catches packaging and entrypoint regressions before a release ships.
+The test matrix checks both repository paths that matter:
 
-Repository-local `.pre-commit-config.yaml` stays intentionally thin, following the same style as `pre-commit-hooks`: generic repository hygiene checks live in pre-commit, while published-hook integration is validated through pytest-based `try-repo` coverage.
+- repository self-checks run through the committed `.pre-commit-config.yaml`, which references this repository through `repo: .`, `rev: HEAD`, and `hooks: - id: ...` entries only
+- consumer installs still run through pytest-based `pre-commit try-repo` coverage
 
-Published Python hooks in this repository use `console_scripts` entrypoints. Repository-local self-checks are a separate concern and must not weaken that published entrypoint contract.
+Published Python hooks in this repository use `console_scripts` entrypoints. The repository self-check config avoids inline wrapper commands and exercises the same hook manifest path that consumers use.
 
 ## Usage
 
