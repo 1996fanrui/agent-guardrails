@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Lint rule: disallow bare dict literals in backend runtime code.
 
 Use structured models for protocol/API/storage payloads. Legitimate internal
@@ -258,7 +257,7 @@ def check_file(path: Path) -> list[str]:
 
 
 def main() -> int:
-    files = [Path(f) for f in sys.argv[1:]]
+    files = [Path(file_name) for file_name in sys.argv[1:]]
     if not files:
         return 0
 

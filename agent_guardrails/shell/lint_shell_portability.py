@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Fail on known GNU-only shell syntax in repository scripts."""
 
 from __future__ import annotations
@@ -19,6 +18,7 @@ RULES: tuple[tuple[str, re.Pattern[str], str], ...] = (
 
 
 def check_file(path: Path) -> list[str]:
+    """Return portability violations for the given shell file."""
     violations: list[str] = []
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if ALLOW_COMMENT in line:
@@ -33,7 +33,7 @@ def check_file(path: Path) -> list[str]:
 
 
 def main() -> int:
-    files = [Path(f) for f in sys.argv[1:]]
+    files = [Path(file_name) for file_name in sys.argv[1:]]
     if not files:
         return 0
 

@@ -10,6 +10,5 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 
-[tool.setuptools]
-packages = []
-py-modules = []
+[tool.setuptools.packages.find]
+include = ["agent_guardrails*"]

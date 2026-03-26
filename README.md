@@ -4,6 +4,12 @@ AI coding agents write fast but ignore conventions. `agent-guardrails` enforces 
 
 A [pre-commit](https://pre-commit.com/) hook repository providing custom lints that no single-language tool covers — designed to work uniformly across multi-language, multi-repo setups.
 
+## CI
+
+GitHub Actions follows the same thin-wrapper pattern used by `pre-commit` and `pre-commit-hooks`: the workflow delegates execution to `tox`, and `tox` owns the repository validation contract.
+
+The test matrix checks the real consumer path with `pre-commit try-repo`, not just direct script execution. That catches packaging and entrypoint regressions before a release ships.
+
 ## Usage
 
 ### As pre-commit hooks
@@ -48,3 +54,10 @@ Repository-local skill:
 
 - use `.agents/skills/create-lint/` to create or migrate hooks in this repo
 - `.claude` is a symlink to `.agents`, so maintain the skill in `.agents` only
+
+Run the local validation matrix before opening a PR:
+
+```bash
+uv tool run tox -e py311
+uv tool run tox -e pre-commit
+```
