@@ -1,0 +1,19 @@
+- id: lint-shell-portability
+  name: Shell portability (no GNU-only syntax)
+  language: script
+  entry: shell/lint_shell_portability.py
+  types: [shell]
+  exclude: '(^|/)(\.venv|node_modules|dist|build|mobile/android|frontend/dist)/'
+
+- id: lint-no-chinese
+  name: No Chinese characters in source
+  language: script
+  entry: general/lint_no_chinese.py
+  exclude: '(^|/)(\.venv|node_modules|dist|build|__pycache__|requirements)(/|$)|(^|/)(AGENTS|CLAUDE)\.md$'
+
+- id: lint-backend-bare-dict
+  name: No bare dict in backend Python
+  language: script
+  entry: python/lint_backend_bare_dict.py
+  types: [python]
+  exclude: '(^|/)(tests?|\.venv|__pycache__|dist|build)/'
