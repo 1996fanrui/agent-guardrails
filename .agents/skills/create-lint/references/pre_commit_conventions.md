@@ -34,15 +34,16 @@ When adding or migrating a hook, use this order of decisions:
 
 1. Define `language`
 2. Define `types`, `types_or`, and `exclude` in `.pre-commit-hooks.yaml`
-3. Implement the script
-4. Run positive and negative validation
+3. For every distributed Python hook, add a `console_scripts` entry in packaging metadata and use that generated command in `.pre-commit-hooks.yaml`
+4. Review separately whether the repository's own `.pre-commit-config.yaml` should keep using `python -m ...` for `repo: local` self-checks
+5. Implement the script
+6. Run positive and negative validation
 
 Do not write a repository-scanning script first and then try to patch its scope later with `exclude`.
 
 ## Python Script Template
 
 ```python
-#!/usr/bin/env python3
 """Describe what this lint checks."""
 
 from __future__ import annotations
@@ -86,10 +87,15 @@ if __name__ == "__main__":
 - id: my-hook
   name: Human-readable hook name
   language: python
-  entry: path/to/script.py          # relative to the repository root
+  entry: my-hook-command
   types: [python]                   # use types_or for multiple file classes
   exclude: '(^|/)(tests?|\.venv|node_modules|dist|build|__pycache__)/'
   # omit pass_filenames; true is the default
+```
+
+```toml
+[project.scripts]
+my-hook-command = "agent_guardrails.general.my_hook:main"
 ```
 
 ## File Type Reference
@@ -131,20 +137,33 @@ If a rule applies to almost all text files, such as comments, docs, and config f
 
 If a hook needs project-level semantics, such as "check backend runtime only, not tests," express that boundary in `exclude` instead of building a second discovery model in the script.
 
+If the hook repository also self-consumes its hooks through a local `.pre-commit-config.yaml`:
+
+- Adding a new published hook is not complete until the repository's own self-check configuration is reviewed and updated when appropriate.
+- Do not blindly copy the published `entry` into `repo: local` hooks.
+- A `console_scripts` command exists only after the package is installed into the hook environment; `repo: local` self-checks do not automatically install the current repository as a package.
+- For `repo: local` self-checks, `python -m package.module` is the default choice unless you have explicitly verified that the command wrapper is present in that environment.
+
 ## Full Procedure For Adding Or Migrating A Hook
 
-1. Create the script in the correct directory: `general/`, `python/`, or `shell/`, with the shebang `#!/usr/bin/env python3`
-2. Decide `language` first: shared Python hooks default to `python`, and `script` is allowed only for explicit exceptions
-3. Implement the script as a file-list consumer that reads only `sys.argv[1:]`
-4. If `language: script` is chosen, set the executable bit with `chmod +x <script>` and `git update-index --chmod=+x <script>`
-5. Path-based script entrypoints must be executable even when `language: python` is used
-6. Add or update the hook definition in `.pre-commit-hooks.yaml`, including `language`, `types`, `types_or`, and `exclude`
-7. If the script needs same-directory imports, use `sys.path.insert(0, str(Path(__file__).parent))`
-8. Run positive validation: an in-scope violation must fail
-9. Run negative validation: excluded paths, test directories, or non-target file types must not be reported
-10. If `language: python` is used, validate that pre-commit can create the runtime environment successfully
-11. Prefer `pre-commit try-repo /home/fanrui/code/agent-guardrails <hook-id> --all-files` for realistic hook validation
-12. Only commit, push, or update the consumer repository `rev` when the user explicitly asks
+1. Create the script in the correct directory: `general/`, `python/`, or `shell/`
+2. Do not add a shebang to a distributed Python hook module; the published entrypoint must come from `console_scripts`, not direct path execution
+3. Decide `language` first: shared Python hooks default to `python`, and `script` is allowed only for explicit exceptions
+4. For every distributed Python hook, add a `console_scripts` mapping in packaging metadata
+5. Use the generated command name as the published `entry` in `.pre-commit-hooks.yaml`, not `python -m ...` and not a repo-relative path
+6. Implement the script as a file-list consumer that reads only `sys.argv[1:]`
+7. If `language: script` is chosen, set the executable bit with `chmod +x <script>` and `git update-index --chmod=+x <script>`
+8. Path-based script entrypoints must be executable even when `language: python` is used
+9. Add or update the hook definition in `.pre-commit-hooks.yaml`, including `language`, `types`, `types_or`, and `exclude`
+10. Review the repository's own `.pre-commit-config.yaml`; if the repository self-consumes the hook, add the new hook there as well, but keep `repo: local` entrypoints aligned with how that environment actually resolves commands
+11. If the script needs same-directory imports, use `sys.path.insert(0, str(Path(__file__).parent))`
+12. Run positive validation: an in-scope violation must fail
+13. Run negative validation: excluded paths, test directories, or non-target file types must not be reported
+14. If `language: python` is used, validate that pre-commit can create the runtime environment successfully
+15. Prefer `pre-commit try-repo /home/fanrui/code/agent-guardrails <hook-id> --all-files` for realistic published-hook validation
+16. When validating a local working tree with `pre-commit try-repo`, make sure newly added hook modules and packaging files are already in the Git snapshot (for example via `git add <paths>`) or export a temporary committed copy first; otherwise the shadow repository may miss the new files and produce false negatives such as `No module named ...`
+17. Validate the repository's own self-check path separately, for example with `pre-commit run --all-files`, because `repo: local` behavior is not identical to published-hook installation behavior
+18. Only commit, push, or update the consumer repository `rev` when the user explicitly asks
 
 ## Extra Requirements For Migrating Legacy Hooks
 
@@ -166,6 +185,8 @@ When migrating, complete all four actions together:
 
 - Do not treat a `.py` file extension as a reason to choose `language: script`
 - Do not default shared, cross-project Python hooks to `language: script`
+- Do not publish a Python hook with `entry: python -m ...`; published Python hooks in this repository must use `console_scripts`
+- Do not publish a Python hook with a repo-relative script path
 - Do not set `pass_filenames: false` unless the hook is inherently global and the user has explicitly accepted that exception
 - Do not `rglob` the repository from the script; let pre-commit discover files
 - Do not reimplement exclude logic inside the script; use `.pre-commit-hooks.yaml`

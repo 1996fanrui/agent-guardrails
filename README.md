@@ -10,6 +10,10 @@ GitHub Actions follows the same thin-wrapper pattern used by `pre-commit` and `p
 
 The test matrix checks the real consumer path with `pre-commit try-repo`, not just direct script execution. That catches packaging and entrypoint regressions before a release ships.
 
+Repository-local `.pre-commit-config.yaml` stays intentionally thin, following the same style as `pre-commit-hooks`: generic repository hygiene checks live in pre-commit, while published-hook integration is validated through pytest-based `try-repo` coverage.
+
+Published Python hooks in this repository use `console_scripts` entrypoints. Repository-local self-checks are a separate concern and must not weaken that published entrypoint contract.
+
 ## Usage
 
 ### As pre-commit hooks
@@ -44,6 +48,7 @@ pre-commit run --all-files
 When adding or migrating a hook in this repository, treat `.pre-commit-hooks.yaml` as the source of truth for scope selection:
 
 - define `types` or `types_or` first
+- expose every published Python hook through `[project.scripts]`
 - narrow the runtime surface with `exclude`
 - keep `pass_filenames` at its default behavior
 - make the script consume only `sys.argv[1:]`

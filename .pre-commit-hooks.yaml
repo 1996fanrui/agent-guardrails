@@ -1,27 +1,33 @@
 - id: lint-shell-portability
   name: Shell portability (no GNU-only syntax)
   language: python
-  entry: python -m agent_guardrails.shell.lint_shell_portability
+  entry: lint-shell-portability
   types: [shell]
   exclude: '(^|/)(\.venv|node_modules|dist|build|mobile/android|frontend/dist)/'
 
 - id: lint-no-chinese
   name: No Chinese characters in source
   language: python
-  entry: python -m agent_guardrails.general.lint_no_chinese
+  entry: lint-no-chinese
   exclude: '(^|/)(\.venv|node_modules|dist|build|__pycache__|requirements)(/|$)|(^|/)(AGENTS|CLAUDE)\.md$'
+
+- id: lint-file-line-count
+  name: File line-count limit
+  language: python
+  entry: lint-file-line-count
+  exclude: '(^|/)(\.git|\.hg|\.svn|\.venv|venv|node_modules|dist|build|target|out|coverage|htmlcov|__pycache__|\.mypy_cache|\.pytest_cache|\.ruff_cache|\.tox|\.nox|generated|gen|genfiles|proto_gen|pb_gen|vendor|third_party)(/|$)|(^|/)(AGENTS|CLAUDE)\.md$'
 
 - id: lint-backend-bare-dict
   name: No bare dict in backend Python
   language: python
-  entry: python -m agent_guardrails.python.lint_backend_bare_dict
+  entry: lint-backend-bare-dict
   types: [python]
   exclude: '(^|/)(tests?|\.venv|__pycache__|dist|build)/'
 
 - id: lint-pre-commit-hook-languages
   name: Pre-commit hook language selection
   language: python
-  entry: python -m agent_guardrails.general.lint_pre_commit_hook_languages
+  entry: lint-pre-commit-hook-languages
   types: [yaml]
   files: ^\.pre-commit-(?:config|hooks)\.yaml$
   exclude: '^$'
