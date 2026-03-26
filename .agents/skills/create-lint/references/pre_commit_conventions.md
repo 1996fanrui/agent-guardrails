@@ -89,7 +89,7 @@ if __name__ == "__main__":
   language: python
   entry: my-hook-command
   types: [python]                   # use types_or for multiple file classes
-  exclude: '(^|/)(tests?|\.venv|node_modules|dist|build|__pycache__)/'
+  exclude: '(^|/)tests?/'           # only semantically meaningful excludes
   # omit pass_filenames; true is the default
 ```
 
@@ -119,14 +119,16 @@ Before adding or migrating a hook, answer these questions:
 3. Must test directories, generated directories, or cache directories be excluded?
 4. Can the rule boundary be expressed entirely through `types`, `types_or`, and `exclude`?
 
-Common `exclude` fragments:
+### Exclude Design Rules
 
-- Python runtime excluding tests and caches:
-  `(^|/)(tests?|\.venv|__pycache__|dist|build)/`
-- General source trees excluding dependency and build outputs:
-  `(^|/)(\.venv|node_modules|dist|build|__pycache__)/`
-- Shell scripts excluding platform build-output directories:
-  `(^|/)(\.venv|node_modules|dist|build|mobile/android|frontend/dist)/`
+Do not exclude commonly git-ignored directories (`.venv`, `venv`, `node_modules`, `__pycache__`, `dist`, `build`, `target`, `out`, `coverage`, `htmlcov`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `.tox`, `.nox`, `.git`, `.hg`, `.svn`) in `.pre-commit-hooks.yaml`. Pre-commit only processes git-tracked files, so these excludes are redundant. CI enforces this via `test_no_gitignored_dirs_in_hook_excludes`.
+
+Only keep semantically meaningful excludes — directories that are git-tracked but should be exempt from a specific rule:
+
+- `(^|/)tests?/` — allow different coding standards in test code
+- `(^|/)requirements(/|$)` — allow Chinese content in requirement docs
+- `(^|/)(generated|gen|genfiles|proto_gen|pb_gen|vendor|third_party)(/|$)` — skip generated or vendored code for line-count limits
+- `(^|/)(AGENTS|CLAUDE)\.md$` — local control documents that may contain Chinese
 
 If a rule applies to almost all text files, such as comments, docs, and config files:
 
