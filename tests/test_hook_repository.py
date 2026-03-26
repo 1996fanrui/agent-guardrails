@@ -103,6 +103,20 @@ def _run_try_repo_against_exported_repo(
     )
 
 
+def _run_exported_repo_self_check(
+    *,
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["PRE_COMMIT_HOME"] = str(pre_commit_home)
+    return _run(
+        ["pre-commit", "run", "--all-files", "--config", ".pre-commit-config.yaml"],
+        cwd=exported_hook_repo,
+        env=env,
+    )
+
+
 def _run_with_repo_config(
     *,
     exported_hook_repo: Path,
@@ -230,6 +244,7 @@ def test_lint_file_line_count_validates_scope(
 @pytest.mark.parametrize(
     ("hook_id", "expected_output"),
     (
+        ("lint-enum-redundant-string", "No redundant enum string literals"),
         ("lint-no-chinese", "No Chinese characters in source"),
         ("lint-file-line-count", "File line-count limit"),
         ("lint-pre-commit-hook-languages", "Pre-commit hook language selection"),
@@ -248,6 +263,169 @@ def test_repository_contents_pass_custom_hooks(
     )
     assert result.returncode == 0, _combined_output(result)
     assert expected_output in _combined_output(result)
+
+
+def test_repository_self_check_config_runs_current_repo_hooks(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+) -> None:
+    result = _run_exported_repo_self_check(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+    )
+    assert result.returncode == 0, _combined_output(result)
+
+    output = _combined_output(result)
+    assert "Shell portability (no GNU-only syntax)" in output
+    assert "No Chinese characters in source" in output
+    assert "File line-count limit" in output
+    assert "No bare dict in backend Python" in output
+    assert "No redundant enum string literals" in output
+    assert "Pre-commit hook language selection" in output
+
+
+def test_lint_enum_redundant_string_validates_scope(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    failing_repo = tmp_path_factory.mktemp("lint-enum-redundant-string-fail")
+    failing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_repo,
+        hook_id="lint-enum-redundant-string",
+        files={
+            "src/models.py": """
+                from enum import StrEnum
+
+
+                class LegacyEnum(StrEnum):
+                    @staticmethod
+                    def _generate_next_value_(name, start, count, last_values):
+                        return name
+
+
+                class SomeAction(StrEnum):
+                    CONTINUE = "continue"
+            """,
+        },
+    )
+    assert failing_result.returncode == 1, _combined_output(failing_result)
+    assert "LegacyEnum defines _generate_next_value_" in _combined_output(failing_result)
+    assert "SomeAction.CONTINUE repeats string literal" in _combined_output(failing_result)
+
+    passing_tests_repo = tmp_path_factory.mktemp("lint-enum-redundant-string-tests-pass")
+    passing_tests_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=passing_tests_repo,
+        hook_id="lint-enum-redundant-string",
+        files={
+            "tests/test_models.py": """
+                from enum import StrEnum
+
+
+                class SomeAction(StrEnum):
+                    CONTINUE = "continue"
+            """,
+        },
+    )
+    assert passing_tests_result.returncode == 0, _combined_output(passing_tests_result)
+
+    passing_noqa_repo = tmp_path_factory.mktemp("lint-enum-redundant-string-noqa-pass")
+    passing_noqa_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=passing_noqa_repo,
+        hook_id="lint-enum-redundant-string",
+        files={
+            "pkg/common/enum_utils.py": """
+                from enum import StrEnum
+
+
+                class _UpperNameStrEnum(StrEnum):
+                    @staticmethod
+                    def _generate_next_value_(name, start, count, last_values):
+                        return name
+            """,
+            "pkg/models.py": """
+                from enum import StrEnum
+
+
+                class SomeAction(StrEnum):
+                    CONTINUE = "continue"  # noqa: enum-string
+
+
+                class LocalEnum(StrEnum):
+                    @staticmethod
+                    def _generate_next_value_(name, start, count, last_values):  # noqa: enum-base
+                        return name
+            """,
+        },
+    )
+    assert passing_noqa_result.returncode == 0, _combined_output(passing_noqa_result)
+
+    failing_spoofed_shared_base_repo = tmp_path_factory.mktemp(
+        "lint-enum-redundant-string-spoofed-shared-base-fail"
+    )
+    failing_spoofed_shared_base_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_spoofed_shared_base_repo,
+        hook_id="lint-enum-redundant-string",
+        files={
+            "nested/pkg/common/enum_utils.py": """
+                from enum import StrEnum
+
+
+                class _UpperNameStrEnum(StrEnum):
+                    @staticmethod
+                    def _generate_next_value_(name, start, count, last_values):
+                        return name
+            """,
+        },
+    )
+    assert (
+        failing_spoofed_shared_base_result.returncode == 1
+    ), _combined_output(failing_spoofed_shared_base_result)
+    assert (
+        "_UpperNameStrEnum defines _generate_next_value_"
+        in _combined_output(failing_spoofed_shared_base_result)
+    )
+
+    failing_aliased_enum_repo = tmp_path_factory.mktemp("lint-enum-redundant-string-aliased-fail")
+    failing_aliased_enum_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_aliased_enum_repo,
+        hook_id="lint-enum-redundant-string",
+        files={
+            "src/aliased_models.py": """
+                from enum import Enum as E
+                from enum import StrEnum as S
+
+
+                class LegacyEnum(S):
+                    @staticmethod
+                    def _generate_next_value_(name, start, count, last_values):
+                        return name
+
+
+                class SomeAction(S):
+                    CONTINUE = "continue"
+
+
+                class Status(E):
+                    READY = "ready"
+            """,
+        },
+    )
+    assert failing_aliased_enum_result.returncode == 1, _combined_output(failing_aliased_enum_result)
+    aliased_output = _combined_output(failing_aliased_enum_result)
+    assert "LegacyEnum defines _generate_next_value_" in aliased_output
+    assert "SomeAction.CONTINUE repeats string literal" in aliased_output
+    assert "Status.READY repeats string literal" in aliased_output
 
 
 def test_lint_file_line_count_accepts_consumer_override(

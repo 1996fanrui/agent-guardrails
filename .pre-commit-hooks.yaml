@@ -23,6 +23,13 @@
   types: [python]
   exclude: '(^|/)tests?/'
 
+- id: lint-enum-redundant-string
+  name: No redundant enum string literals
+  language: python
+  entry: lint-enum-redundant-string
+  types: [python]
+  exclude: '(^|/)tests?/'
+
 - id: lint-pre-commit-hook-languages
   name: Pre-commit hook language selection
   language: python

@@ -12,6 +12,7 @@ license = "Apache-2.0"
 
 [project.scripts]
 lint-backend-bare-dict = "agent_guardrails.python.lint_backend_bare_dict:main"
+lint-enum-redundant-string = "agent_guardrails.python.lint_enum_redundant_string:main"
 lint-file-line-count = "agent_guardrails.general.lint_file_line_count:main"
 lint-no-chinese = "agent_guardrails.general.lint_no_chinese:main"
 lint-pre-commit-hook-languages = "agent_guardrails.general.lint_pre_commit_hook_languages:main"
