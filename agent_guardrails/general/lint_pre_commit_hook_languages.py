@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Validate Python entrypoints in pre-commit YAML files use language: python."""
 
 from __future__ import annotations
@@ -11,6 +10,7 @@ from pathlib import Path
 HOOK_START_PATTERN = re.compile(r"^(?P<indent>\s*)- id:\s*(?P<hook_id>.+?)\s*$")
 FIELD_PATTERN = re.compile(r"^(?P<indent>\s+)(?P<key>entry|language):\s*(?P<value>.+?)\s*$")
 LIST_ITEM_PATTERN = re.compile(r"^(?P<indent>\s*)-\s")
+PYTHON_MODULE_ENTRY_PATTERN = re.compile(r"^python(?:\d+(?:\.\d+)?)?\s+-m\s+\S+")
 
 
 def normalize_scalar(raw_value: str) -> str:
@@ -19,6 +19,11 @@ def normalize_scalar(raw_value: str) -> str:
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
         return value[1:-1]
     return value
+
+
+def is_python_entrypoint(entry: str) -> bool:
+    """Return True when the hook entry executes Python code."""
+    return entry.endswith(".py") or PYTHON_MODULE_ENTRY_PATTERN.match(entry) is not None
 
 
 def check_file(path: Path) -> list[str]:
@@ -43,7 +48,7 @@ def check_file(path: Path) -> list[str]:
         nonlocal current_language
         nonlocal current_language_line
 
-        if current_hook_id is None or current_entry is None or not current_entry.endswith(".py"):
+        if current_hook_id is None or current_entry is None or not is_python_entrypoint(current_entry):
             current_hook_id = None
             current_hook_line = 0
             current_hook_indent = -1

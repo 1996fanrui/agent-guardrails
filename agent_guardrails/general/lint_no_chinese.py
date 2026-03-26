@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Lint rule: disallow Chinese characters in source code and UI files."""
 
 from __future__ import annotations
@@ -43,7 +42,7 @@ def scan_file(path: Path) -> list[str]:
 
 
 def main() -> int:
-    files = [Path(f) for f in sys.argv[1:]]
+    files = [Path(file_name) for file_name in sys.argv[1:]]
     if not files:
         return 0
 
