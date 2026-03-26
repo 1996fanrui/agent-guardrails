@@ -36,6 +36,7 @@ Default requirements:
 - let pre-commit own file discovery
 - scripts consume only `sys.argv[1:]`
 - do not set `pass_filenames: false`
+- do not exclude commonly git-ignored directories (`.venv`, `node_modules`, `__pycache__`, `dist`, `build`, `target`, `.tox`, etc.) — pre-commit only sees git-tracked files so these are redundant; only use semantically meaningful excludes (see `references/pre_commit_conventions.md` for the full list and examples)
 
 If you believe the rule cannot operate at file granularity, stop and explain why. Wait for user confirmation before keeping any exception.
 

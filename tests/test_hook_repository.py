@@ -195,7 +195,7 @@ def test_lint_shell_portability_validates_scope(
         pre_commit_home=pre_commit_home,
         tmp_path=passing_repo,
         hook_id="lint-shell-portability",
-        files={"frontend/dist/build.sh": "sed -i 's/a/b/' file.txt\n"},
+        files={"scripts/build.sh": "echo 'hello world'\n"},
     )
     assert passing_result.returncode == 0, _combined_output(passing_result)
 
