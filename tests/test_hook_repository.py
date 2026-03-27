@@ -182,7 +182,10 @@ def test_lint_no_chinese_validates_scope(
         pre_commit_home=pre_commit_home,
         tmp_path=passing_repo,
         hook_id="lint-no-chinese",
-        files={"AGENTS.md": "\u4e2d\u6587\n"},
+        files={
+            "AGENTS.md": "\u4e2d\u6587\n",
+            "docs/zh/design.md": "\u4e2d\u6587\n",
+        },
     )
     assert passing_result.returncode == 0, _combined_output(passing_result)
 
@@ -239,6 +242,16 @@ def test_lint_file_line_count_validates_scope(
         files={"generated/client/api.md": "\n".join(f"Line {index}" for index in range(1, 802))},
     )
     assert passing_result.returncode == 0, _combined_output(passing_result)
+
+    passing_lockfile_repo = tmp_path_factory.mktemp("lint-file-line-count-lockfile-pass")
+    passing_lockfile_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=passing_lockfile_repo,
+        hook_id="lint-file-line-count",
+        files={"backend/uv.lock": "\n".join(f"Line {index}" for index in range(1, 1002))},
+    )
+    assert passing_lockfile_result.returncode == 0, _combined_output(passing_lockfile_result)
 
 
 @pytest.mark.parametrize(
