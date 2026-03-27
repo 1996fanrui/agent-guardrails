@@ -8,13 +8,13 @@
   name: No Chinese characters in source
   language: python
   entry: lint-no-chinese
-  exclude: '(^|/)requirements(/|$)|(^|/)(AGENTS|CLAUDE)\.md$'
+  exclude: '(^|/)requirements(/|$)|(^|/)docs/zh(/|$)|(^|/)(AGENTS|CLAUDE)\.md$'
 
 - id: lint-file-line-count
   name: File line-count limit
   language: python
   entry: lint-file-line-count
-  exclude: '(^|/)(generated|gen|genfiles|proto_gen|pb_gen|vendor|third_party)(/|$)'
+  exclude: '(^|/)(generated|gen|genfiles|proto_gen|pb_gen|vendor|third_party)(/|$)|(^|/)(uv\.lock|poetry\.lock|Pipfile\.lock|package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$'
 
 - id: lint-backend-bare-dict
   name: No bare dict in backend Python

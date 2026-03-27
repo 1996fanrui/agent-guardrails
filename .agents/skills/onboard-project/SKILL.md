@@ -23,7 +23,7 @@ Gather the following about the target project:
 2. **Existing `.pre-commit-config.yaml`**: if present, update rather than overwrite
 3. **Existing `.githooks/pre-commit`**: if present, integrate pre-commit into it
 4. **CI setup**: find `.github/workflows/ci.yml` and `scripts/run_test.sh`
-5. **Content language policy**: check `CLAUDE.md` for rules about Chinese content — determine which paths allow Chinese (e.g. `docs/`, `README.md`, `requirements/`)
+5. **Content language policy**: check `CLAUDE.md` for rules about Chinese content — determine which paths allow Chinese (for docs, prefer `docs/zh/` instead of excluding the whole `docs/` tree; `README.md` and `requirements/` may still need explicit handling)
 
 ## Step 2: Select Community Hooks (`pre-commit/pre-commit-hooks`)
 
@@ -89,10 +89,12 @@ Read `.pre-commit-hooks.yaml` from agent-guardrails and select hooks based on pr
 
 ## Step 4: Determine Excludes For `lint-no-chinese`
 
-The hook's built-in excludes cover `requirements/` and `AGENTS.md`/`CLAUDE.md`. Consumer projects often need additional excludes for paths that intentionally contain Chinese. Common additions:
+The hook's built-in excludes cover `requirements/`, `docs/zh/`, and `AGENTS.md`/`CLAUDE.md`. Consumer projects often need additional excludes for paths that intentionally contain Chinese. Common additions:
 
-- `docs/` — if design docs use Chinese
+- `docs/zh/` — if Chinese documentation is intentionally archived under a dedicated Chinese docs subtree
 - `README.md` — if the README is in Chinese
+
+Do not exempt the whole `docs/` tree when only a Chinese subset needs the exception. Move Chinese docs under `docs/zh/` first, then exclude only `docs/zh/`.
 
 Consumer-level `exclude` in `.pre-commit-config.yaml` **overrides** the hook-level default, so the consumer config must include all needed patterns (both the originals and additions).
 
@@ -135,7 +137,7 @@ repos:
     hooks:
       - id: lint-file-line-count
       - id: lint-no-chinese
-        exclude: '<merged-exclude-pattern>'
+        exclude: '(^|/)requirements(/|$)|(^|/)docs/zh(/|$)|(^|/)(AGENTS|CLAUDE)\.md$'
       - id: lint-shell-portability
       - id: lint-enum-redundant-string
 ```
@@ -195,7 +197,8 @@ Run `pre-commit run --all-files` and fix every violation. Repeat until all hooks
 - Never modify `.pre-commit-config.yaml` or hook configuration to suppress failures — only fix the source code/files
 - `trailing-whitespace`, `end-of-file-fixer`, `fix-byte-order-marker` are auto-fixers — just re-stage the auto-fixed files
 - For `lint-no-chinese`: replace Chinese characters with English or Unicode escapes (depending on project policy)
-- For `lint-file-line-count`: split large files into smaller modules
+- For `lint-file-line-count`: split large files by cohesive responsibilities before touching code movement. Define the target modules first (for example runtime orchestration, Docker API wrappers, filesystem copy helpers, protocol conversions, test fixtures, scenario-focused test suites) and move whole responsibilities into dedicated files. Never "cut the file in half", split by arbitrary line ranges, or create a generic `helpers` dump file that mixes unrelated concerns just to satisfy the line limit.
+- When splitting tests for `lint-file-line-count`, group by scenario/theme/support role (for example lifecycle cases, wait semantics, provider fakes, shared fixtures). Do not distribute tests by raw line counts.
 - For `lint-shell-portability`: replace GNU-only syntax with POSIX-compatible alternatives
 - For `lint-enum-redundant-string`: remove redundant string literals from enum definitions
 - For `debug-statements`: remove `breakpoint()`, `import pdb`, `import ipdb`, etc.

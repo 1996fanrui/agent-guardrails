@@ -8,6 +8,19 @@ from pathlib import Path
 
 
 MAX_LINE_COUNT = 800
+LOCKFILE_NAMES = frozenset(
+    {
+        "uv.lock",
+        "poetry.lock",
+        "Pipfile.lock",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "bun.lock",
+        "bun.lockb",
+        "Cargo.lock",
+    }
+)
 
 
 def parse_max_lines(value: str) -> int:
@@ -38,6 +51,8 @@ def parse_args(argv: list[str]) -> tuple[int, list[Path]]:
 def check_file(path: Path, *, max_lines: int) -> list[str]:
     """Return line-count violations for a single file."""
     if not path.is_file():
+        return []
+    if path.name in LOCKFILE_NAMES:
         return []
 
     try:
