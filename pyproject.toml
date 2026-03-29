@@ -17,6 +17,7 @@ lint-file-line-count = "agent_guardrails.general.lint_file_line_count:main"
 lint-no-chinese = "agent_guardrails.general.lint_no_chinese:main"
 lint-pre-commit-hook-languages = "agent_guardrails.general.lint_pre_commit_hook_languages:main"
 lint-shell-portability = "agent_guardrails.shell.lint_shell_portability:main"
+uv-lock-check = "agent_guardrails.python.uv_lock_check:main"
 
 [tool.setuptools.packages.find]
 include = ["agent_guardrails*"]
