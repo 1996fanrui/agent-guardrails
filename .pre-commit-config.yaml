@@ -24,4 +24,5 @@ repos:
       - id: lint-file-line-count
       - id: lint-backend-bare-dict
       - id: lint-enum-redundant-string
+      - id: uv-lock-check
       - id: lint-pre-commit-hook-languages
