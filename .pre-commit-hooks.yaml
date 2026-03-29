@@ -30,6 +30,13 @@
   types: [python]
   exclude: '(^|/)tests?/'
 
+- id: uv-lock-check
+  name: uv.lock in sync with pyproject.toml
+  language: python
+  entry: uv-lock-check
+  files: '(^|/)(pyproject\.toml|uv\.lock)$'
+  pass_filenames: true
+
 - id: lint-pre-commit-hook-languages
   name: Pre-commit hook language selection
   language: python
