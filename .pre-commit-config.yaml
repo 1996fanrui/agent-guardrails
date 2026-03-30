@@ -26,3 +26,4 @@ repos:
       - id: lint-enum-redundant-string
       - id: uv-lock-check
       - id: lint-pre-commit-hook-languages
+      - id: lint-no-ignored-files
