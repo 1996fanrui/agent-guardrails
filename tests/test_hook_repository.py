@@ -260,6 +260,7 @@ def test_lint_file_line_count_validates_scope(
         ("lint-enum-redundant-string", "No redundant enum string literals"),
         ("lint-no-chinese", "No Chinese characters in source"),
         ("lint-file-line-count", "File line-count limit"),
+        ("lint-no-ignored-files", "No gitignored files in staging"),
         ("lint-pre-commit-hook-languages", "Pre-commit hook language selection"),
     ),
 )
@@ -294,6 +295,7 @@ def test_repository_self_check_config_runs_current_repo_hooks(
     assert "File line-count limit" in output
     assert "No bare dict in backend Python" in output
     assert "No redundant enum string literals" in output
+    assert "No gitignored files in staging" in output
     assert "Pre-commit hook language selection" in output
 
 
@@ -493,6 +495,45 @@ def test_lint_backend_bare_dict_validates_scope(
         tmp_path=passing_repo,
         hook_id="lint-backend-bare-dict",
         files={"tests/test_service.py": 'payload = {"name": "demo"}\n'},
+    )
+    assert passing_result.returncode == 0, _combined_output(passing_result)
+
+
+def test_lint_no_ignored_files_validates_scope(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    # Positive case: a gitignored file that is force-staged must fail.
+    failing_repo = tmp_path_factory.mktemp("lint-no-ignored-files-fail")
+    _init_git_repo(failing_repo)
+    _write_file(failing_repo / ".gitignore", "*.log\n")
+    subprocess.run(["git", "add", ".gitignore"], cwd=failing_repo, check=True)
+    subprocess.run(["git", "commit", "-qm", "add gitignore"], cwd=failing_repo, check=True)
+    _write_file(failing_repo / "debug.log", "some log output\n")
+    subprocess.run(["git", "add", "-f", "debug.log"], cwd=failing_repo, check=True)
+
+    env = os.environ.copy()
+    env["PRE_COMMIT_HOME"] = str(pre_commit_home)
+    failing_result = _run(
+        [
+            "pre-commit", "try-repo", str(exported_hook_repo),
+            "lint-no-ignored-files", "--files", "debug.log",
+        ],
+        cwd=failing_repo,
+        env=env,
+    )
+    assert failing_result.returncode == 1, _combined_output(failing_result)
+    assert "Ignored files must not be committed" in _combined_output(failing_result)
+
+    # Negative case: a normal (non-ignored) file must pass.
+    passing_repo = tmp_path_factory.mktemp("lint-no-ignored-files-pass")
+    passing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=passing_repo,
+        hook_id="lint-no-ignored-files",
+        files={"src/main.py": "print('hello')\n"},
     )
     assert passing_result.returncode == 0, _combined_output(passing_result)
 

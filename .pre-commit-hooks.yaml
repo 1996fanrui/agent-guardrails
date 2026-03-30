@@ -44,3 +44,8 @@
   types: [yaml]
   files: ^\.pre-commit-(?:config|hooks)\.yaml$
   exclude: '^$'
+
+- id: lint-no-ignored-files
+  name: No gitignored files in staging
+  language: python
+  entry: lint-no-ignored-files
