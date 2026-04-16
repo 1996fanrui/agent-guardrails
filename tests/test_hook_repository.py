@@ -8,6 +8,23 @@ from pathlib import Path
 
 import pytest
 
+from _pep723_fixtures import (
+    BAD_FILENAME as _BAD_FILENAME,
+    OK_FILENAME as _OK_FILENAME,
+    PEP723_BELOW_BASELINE as _PEP723_BELOW_BASELINE,
+    PEP723_DOCSTRING_NO_UV_RUN as _PEP723_DOCSTRING_NO_UV_RUN,
+    PEP723_INVALID_PEP440 as _PEP723_INVALID_PEP440,
+    PEP723_MISSING_REQUIRES as _PEP723_MISSING_REQUIRES,
+    PEP723_NO_BLOCK as _PEP723_NO_BLOCK,
+    PEP723_NO_DOCSTRING as _PEP723_NO_DOCSTRING,
+    PEP723_OK_BLOCK as _PEP723_OK_BLOCK,
+    PEP723_OK_BLOCK_AFTER_SHEBANG as _PEP723_OK_BLOCK_AFTER_SHEBANG,
+    PEP723_OK_THREE_SEGMENT as _PEP723_OK_THREE_SEGMENT,
+    PEP723_OK_WITH_SPACES as _PEP723_OK_WITH_SPACES,
+    PEP723_RANGE_FORM as _PEP723_RANGE_FORM,
+    PEP723_UNSUPPORTED_FORM as _PEP723_UNSUPPORTED_FORM,
+)
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -262,6 +279,7 @@ def test_lint_file_line_count_validates_scope(
         ("lint-file-line-count", "File line-count limit"),
         ("lint-no-ignored-files", "No gitignored files in staging"),
         ("lint-pre-commit-hook-languages", "Pre-commit hook language selection"),
+        ("lint-pep723-header", "PEP 723 header compliance"),
     ),
 )
 def test_repository_contents_pass_custom_hooks(
@@ -297,6 +315,7 @@ def test_repository_self_check_config_runs_current_repo_hooks(
     assert "No redundant enum string literals" in output
     assert "No gitignored files in staging" in output
     assert "Pre-commit hook language selection" in output
+    assert "PEP 723 header compliance" in output
 
 
 def test_lint_enum_redundant_string_validates_scope(
@@ -577,3 +596,191 @@ def test_lint_pre_commit_hook_languages_validates_scope(
         },
     )
     assert passing_result.returncode == 0, _combined_output(passing_result)
+
+
+def test_lint_pep723_header_passes_when_header_and_docstring_are_valid(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    passing_repo = tmp_path_factory.mktemp("lint-pep723-pass")
+    # Each file is written under the canonical _OK_FILENAME so the docstring's
+    # `uv run ok.py` line matches the on-disk filename.
+    passing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=passing_repo,
+        hook_id="lint-pep723-header",
+        files={_OK_FILENAME: _PEP723_OK_BLOCK},
+    )
+    assert passing_result.returncode == 0, _combined_output(passing_result)
+
+    for label, body in (
+        ("after-shebang", _PEP723_OK_BLOCK_AFTER_SHEBANG),
+        ("three-segment", _PEP723_OK_THREE_SEGMENT),
+        ("with-spaces", _PEP723_OK_WITH_SPACES),
+    ):
+        repo = tmp_path_factory.mktemp(f"lint-pep723-pass-{label}")
+        result = _run_try_repo(
+            exported_hook_repo=exported_hook_repo,
+            pre_commit_home=pre_commit_home,
+            tmp_path=repo,
+            hook_id="lint-pep723-header",
+            files={_OK_FILENAME: body},
+        )
+        assert result.returncode == 0, _combined_output(result)
+
+
+def test_lint_pep723_header_rejects_missing_block(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    """Strict mode: a `.py` without a `# /// script` block is itself a violation."""
+    failing_repo = tmp_path_factory.mktemp("lint-pep723-no-block")
+    failing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_repo,
+        hook_id="lint-pep723-header",
+        files={_BAD_FILENAME: _PEP723_NO_BLOCK},
+    )
+    assert failing_result.returncode == 1, _combined_output(failing_result)
+    assert "missing PEP 723 inline metadata block" in _combined_output(failing_result)
+
+
+def test_lint_pep723_header_rejects_missing_requires_python(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    failing_repo = tmp_path_factory.mktemp("lint-pep723-missing-requires")
+    failing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_repo,
+        hook_id="lint-pep723-header",
+        files={_BAD_FILENAME: _PEP723_MISSING_REQUIRES},
+    )
+    assert failing_result.returncode == 1, _combined_output(failing_result)
+    assert "missing 'requires-python'" in _combined_output(failing_result)
+
+
+def test_lint_pep723_header_rejects_non_pep440(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    failing_repo = tmp_path_factory.mktemp("lint-pep723-invalid-pep440")
+    failing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_repo,
+        hook_id="lint-pep723-header",
+        files={_BAD_FILENAME: _PEP723_INVALID_PEP440},
+    )
+    assert failing_result.returncode == 1, _combined_output(failing_result)
+    assert "not a valid PEP 440 specifier" in _combined_output(failing_result)
+
+
+def test_lint_pep723_header_rejects_unsupported_forms(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    for label, body in (("eq", _PEP723_UNSUPPORTED_FORM), ("range", _PEP723_RANGE_FORM)):
+        repo = tmp_path_factory.mktemp(f"lint-pep723-form-{label}")
+        result = _run_try_repo(
+            exported_hook_repo=exported_hook_repo,
+            pre_commit_home=pre_commit_home,
+            tmp_path=repo,
+            hook_id="lint-pep723-header",
+            files={_BAD_FILENAME: body},
+        )
+        assert result.returncode == 1, _combined_output(result)
+        assert "unsupported form" in _combined_output(result)
+
+
+def test_lint_pep723_header_enforces_default_baseline(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    failing_repo = tmp_path_factory.mktemp("lint-pep723-below-baseline")
+    failing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_repo,
+        hook_id="lint-pep723-header",
+        files={_BAD_FILENAME: _PEP723_BELOW_BASELINE},
+    )
+    assert failing_result.returncode == 1, _combined_output(failing_result)
+    output = _combined_output(failing_result)
+    assert "'>=3.8'" in output
+    assert 'below baseline ">=3.10"' in output
+
+
+def test_lint_pep723_header_rejects_missing_docstring(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    failing_repo = tmp_path_factory.mktemp("lint-pep723-no-docstring")
+    failing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_repo,
+        hook_id="lint-pep723-header",
+        files={_BAD_FILENAME: _PEP723_NO_DOCSTRING},
+    )
+    assert failing_result.returncode == 1, _combined_output(failing_result)
+    assert "missing module docstring" in _combined_output(failing_result)
+
+
+def test_lint_pep723_header_rejects_docstring_without_uv_run_example(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    failing_repo = tmp_path_factory.mktemp("lint-pep723-no-uv-run")
+    failing_result = _run_try_repo(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=failing_repo,
+        hook_id="lint-pep723-header",
+        files={_BAD_FILENAME: _PEP723_DOCSTRING_NO_UV_RUN},
+    )
+    assert failing_result.returncode == 1, _combined_output(failing_result)
+    output = _combined_output(failing_result)
+    assert f"`uv run {_BAD_FILENAME}` invocation example" in output
+
+
+def test_lint_pep723_header_accepts_consumer_override(
+    exported_hook_repo: Path,
+    pre_commit_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    # --min-python=3.9 lets the body's ">=3.8" still fail (below baseline).
+    below_repo = tmp_path_factory.mktemp("lint-pep723-override-below")
+    below_result = _run_with_repo_config(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=below_repo,
+        hook_id="lint-pep723-header",
+        hook_args=["--min-python=3.9"],
+        files={_BAD_FILENAME: _PEP723_BELOW_BASELINE},
+    )
+    assert below_result.returncode == 1, _combined_output(below_result)
+
+    # Raising the floor to 3.12 must reject the default ">=3.10" sample.
+    strict_repo = tmp_path_factory.mktemp("lint-pep723-override-strict")
+    strict_result = _run_with_repo_config(
+        exported_hook_repo=exported_hook_repo,
+        pre_commit_home=pre_commit_home,
+        tmp_path=strict_repo,
+        hook_id="lint-pep723-header",
+        hook_args=["--min-python=3.12"],
+        files={_OK_FILENAME: _PEP723_OK_BLOCK},
+    )
+    assert strict_result.returncode == 1, _combined_output(strict_result)
+    assert 'below baseline ">=3.12"' in _combined_output(strict_result)
