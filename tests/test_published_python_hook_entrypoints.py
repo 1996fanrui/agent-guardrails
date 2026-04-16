@@ -107,11 +107,20 @@ def test_published_python_hooks_use_project_scripts_entrypoints() -> None:
 
 
 def test_repository_self_check_config_uses_current_repo_hooks() -> None:
+    """Self-check must consume this repo's hooks via ``repo: . / rev: HEAD``.
+
+    Self-check hooks must be a subset of the manifest (cannot reference a hook
+    the manifest does not publish). The reverse is intentionally NOT enforced:
+    introducing a new hook is split across two commits — first the manifest +
+    implementation, then the self-check enable — to avoid the bootstrap
+    deadlock where pre-commit, during the introducing commit, still resolves
+    ``repo: . / rev: HEAD`` against the previous (hook-less) HEAD.
+    """
     manifest = _load_hook_manifest()
+    manifest_ids = {hook["id"] for hook in manifest}
     config = _load_self_check_config()
     repos = config.get("repos")
     assert isinstance(repos, list), "Expected .pre-commit-config.yaml to define a repos list."
-    expected_hooks = [{"id": hook["id"]} for hook in manifest]
 
     self_check_repo = None
     for repo_config in repos:
@@ -124,12 +133,17 @@ def test_repository_self_check_config_uses_current_repo_hooks() -> None:
         "Expected .pre-commit-config.yaml to consume this repository's published hooks "
         "through repo '.'."
     )
-    assert self_check_repo == {
-        "repo": SELF_CHECK_REPO,
-        "rev": SELF_CHECK_REV,
-        "hooks": expected_hooks,
-    }, (
-        "Expected .pre-commit-config.yaml self-checks to use the repository manifest "
-        "path exactly: repo '.', rev 'HEAD', and hooks declared as id-only entries. "
-        f"Found {self_check_repo!r}."
+    assert self_check_repo.get("rev") == SELF_CHECK_REV, (
+        f"Expected self-check repo to pin rev={SELF_CHECK_REV!r}; "
+        f"found {self_check_repo.get('rev')!r}."
+    )
+
+    self_check_hooks = self_check_repo.get("hooks") or []
+    assert all(isinstance(hook, dict) and set(hook) == {"id"} for hook in self_check_hooks), (
+        "Each self-check hook entry must be an id-only mapping."
+    )
+    self_check_ids = {hook["id"] for hook in self_check_hooks}
+    extras = self_check_ids - manifest_ids
+    assert not extras, (
+        f"Self-check references hook ids not in `.pre-commit-hooks.yaml`: {sorted(extras)}."
     )

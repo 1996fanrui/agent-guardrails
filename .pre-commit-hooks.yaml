@@ -49,3 +49,24 @@
   name: No gitignored files in staging
   language: python
   entry: lint-no-ignored-files
+
+# Enforce the "portable single-file script" convention: any script meant to be
+# carried around and run by other people must be self-contained — declare its
+# Python version and dependencies inline (PEP 723), and provide a docstring
+# that shows the canonical `uv run <self>` invocation.
+#
+# Use when: the scoped directory holds scripts intended to be portable
+#   (e.g. tooling, examples, per-feature `scripts/`). The hook fails any file
+#   missing a PEP 723 header or `uv run` docstring example — that is the
+#   violation, not a "skip".
+# Skip the directory only when: it holds traditional package modules consumed
+#   via `import` from other code, where portability is a non-goal.
+- id: lint-pep723-header
+  name: PEP 723 header compliance (requires-python + uv run docstring example)
+  language: python
+  entry: lint-pep723-header
+  types: [python]
+  # Excludes:
+  #   - __init__.py marks a package, not a script; never has a PEP 723 header.
+  #   - tests/ holds pytest modules consumed via `import`, not portable scripts.
+  exclude: '(^|/)__init__\.py$|(^|/)tests?/'
