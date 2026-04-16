@@ -1,4 +1,12 @@
-"""Lint rule: disallow redundant enum string literals."""
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""Lint rule: disallow redundant enum string literals.
+
+Usage:
+    uv run lint_enum_redundant_string.py FILE [...]
+"""
 
 from __future__ import annotations
 

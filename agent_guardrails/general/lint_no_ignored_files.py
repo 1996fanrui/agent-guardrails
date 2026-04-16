@@ -1,4 +1,12 @@
-"""Lint rule: prevent gitignored files from being committed."""
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""Lint rule: prevent gitignored files from being committed.
+
+Usage:
+    uv run lint_no_ignored_files.py FILE [...]
+"""
 
 from __future__ import annotations
 

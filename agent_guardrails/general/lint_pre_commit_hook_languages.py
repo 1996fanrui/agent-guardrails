@@ -1,4 +1,12 @@
-"""Validate Python entrypoints in pre-commit YAML files use language: python."""
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""Validate Python entrypoints in pre-commit YAML files use language: python.
+
+Usage:
+    uv run lint_pre_commit_hook_languages.py FILE [...]
+"""
 
 from __future__ import annotations
 

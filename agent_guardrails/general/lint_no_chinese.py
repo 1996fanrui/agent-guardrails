@@ -1,4 +1,12 @@
-"""Lint rule: disallow Chinese characters in source code and UI files."""
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""Lint rule: disallow Chinese characters in source code and UI files.
+
+Usage:
+    uv run lint_no_chinese.py FILE [...]
+"""
 
 from __future__ import annotations
 
