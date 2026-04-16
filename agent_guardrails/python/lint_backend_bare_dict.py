@@ -1,7 +1,14 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Lint rule: disallow bare dict literals in backend runtime code.
 
 Use structured models for protocol/API/storage payloads. Legitimate internal
 mapping cases must carry an inline ``# noqa: bare-dict`` comment with a reason.
+
+Usage:
+    uv run lint_backend_bare_dict.py FILE [...]
 """
 
 from __future__ import annotations

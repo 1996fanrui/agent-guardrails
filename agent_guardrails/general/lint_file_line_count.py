@@ -1,4 +1,12 @@
-"""Lint rule: enforce a maximum line count per tracked text file."""
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""Lint rule: enforce a maximum line count per tracked text file.
+
+Usage:
+    uv run lint_file_line_count.py [--max-lines N] FILE [...]
+"""
 
 from __future__ import annotations
 

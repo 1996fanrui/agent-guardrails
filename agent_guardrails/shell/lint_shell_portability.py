@@ -1,4 +1,12 @@
-"""Fail on known GNU-only shell syntax in repository scripts."""
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+"""Fail on known GNU-only shell syntax in repository scripts.
+
+Usage:
+    uv run lint_shell_portability.py FILE [...]
+"""
 
 from __future__ import annotations
 

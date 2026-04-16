@@ -1,8 +1,15 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
 """Pre-commit hook: verify uv.lock is in sync with pyproject.toml.
 
 Receives changed file paths, walks up each file's directory tree to find the
 nearest pyproject.toml, and runs `uv lock --check` once per discovered project.
 Projects without a uv.lock are skipped (they may use a different package manager).
+
+Usage:
+    uv run uv_lock_check.py FILE [...]
 """
 
 from __future__ import annotations
