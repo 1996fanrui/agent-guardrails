@@ -17,6 +17,7 @@ dependencies = [
 lint-backend-bare-dict = "agent_guardrails.python.lint_backend_bare_dict:main"
 lint-enum-redundant-string = "agent_guardrails.python.lint_enum_redundant_string:main"
 lint-file-line-count = "agent_guardrails.general.lint_file_line_count:main"
+lint-folder-note = "agent_guardrails.general.lint_folder_note:main"
 lint-no-chinese = "agent_guardrails.general.lint_no_chinese:main"
 lint-pep723-header = "agent_guardrails.python.lint_pep723_header:main"
 lint-pre-commit-hook-languages = "agent_guardrails.general.lint_pre_commit_hook_languages:main"
