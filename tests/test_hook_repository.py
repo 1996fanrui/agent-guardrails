@@ -545,14 +545,14 @@ def test_lint_no_ignored_files_validates_scope(
     assert failing_result.returncode == 1, _combined_output(failing_result)
     assert "Ignored files must not be committed" in _combined_output(failing_result)
 
-    # Negative case: a normal (non-ignored) file must pass.
+    # Negative cases: a negated file and a file with no matching rule must pass.
     passing_repo = tmp_path_factory.mktemp("lint-no-ignored-files-pass")
     passing_result = _run_try_repo(
         exported_hook_repo=exported_hook_repo,
         pre_commit_home=pre_commit_home,
         tmp_path=passing_repo,
         hook_id="lint-no-ignored-files",
-        files={"src/main.py": "print('hello')\n"},
+        files={".gitignore": "*.txt\n!final.txt\n", "final.txt": "final transcript\n", "src/main.py": "print('hello')\n"},
     )
     assert passing_result.returncode == 0, _combined_output(passing_result)
 

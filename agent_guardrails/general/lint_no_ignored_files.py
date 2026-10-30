@@ -20,30 +20,41 @@ _VERBOSE_FIELDS = 4
 def find_ignored(paths: list[str]) -> list[str]:
     """Return a violation line for each path in *paths* matching a .gitignore rule.
 
-    All paths are passed to a single ``git check-ignore`` process. Spawning one
-    process per path instead makes this the dominant cost of a pre-commit run on
-    repositories with thousands of files.
+    Batch paths so process startup does not dominate large pre-commit runs.
     """
     if not paths:
         return []
 
-    result = subprocess.run(
-        ["git", "check-ignore", "-z", "-v", "--no-index", "--stdin"],
+    ignored = subprocess.run(
+        ["git", "check-ignore", "-z", "--no-index", "--stdin"],
         input="\0".join(paths) + "\0",
         capture_output=True,
         text=True,
     )
-    # Exit code 1 means no path was ignored; anything above that is a real
-    # failure (bad usage, not a repository, ...) that must not pass silently.
-    if result.returncode > 1:
-        message = result.stderr.strip() or "git check-ignore failed"
-        raise RuntimeError(f"{message} (exit code {result.returncode})")
+    if ignored.returncode == 1:
+        return []
+    if ignored.returncode != 0:
+        message = ignored.stderr.strip() or "git check-ignore failed"
+        raise RuntimeError(f"{message} (exit code {ignored.returncode})")
+    ignored_paths = [path for path in ignored.stdout.split("\0") if path]
+    if not ignored_paths or any(path not in paths for path in ignored_paths):
+        raise RuntimeError("git check-ignore returned invalid ignored paths")
 
-    fields = result.stdout.split("\0")
+    details = subprocess.run(
+        ["git", "check-ignore", "-z", "-v", "--no-index", "--stdin"],
+        input="\0".join(ignored_paths) + "\0",
+        capture_output=True,
+        text=True,
+    )
+    if details.returncode != 0:
+        message = details.stderr.strip() or "git check-ignore failed"
+        raise RuntimeError(f"{message} (exit code {details.returncode})")
+
+    fields = details.stdout.split("\0")
+    if fields[-1] != "" or len(fields) != len(ignored_paths) * _VERBOSE_FIELDS + 1:
+        raise RuntimeError("git check-ignore returned incomplete verbose records")
     violations: list[str] = []
-    # The trailing NUL terminator leaves an empty final element; ignore any
-    # partial record rather than silently dropping half a violation.
-    for index in range(0, len(fields) - _VERBOSE_FIELDS + 1, _VERBOSE_FIELDS):
+    for index in range(0, len(fields) - 1, _VERBOSE_FIELDS):
         source, line, pattern, path = fields[index:index + _VERBOSE_FIELDS]
         violations.append(f"{path}: matched by {source}:{line}:{pattern}\t{path}")
     return violations
