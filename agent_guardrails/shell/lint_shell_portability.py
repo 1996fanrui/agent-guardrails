@@ -22,6 +22,11 @@ RULES: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ("SHP003", re.compile(r"\bdate\s+-d\b"), "Avoid GNU `date -d`; parse timestamps with Python or another portable helper."),
     ("SHP004", re.compile(r"\bstat\s+-c\b"), "Avoid GNU `stat -c`; use a portable helper."),
     ("SHP005", re.compile(r"\bxargs\s+-r\b"), "Avoid GNU `xargs -r`; handle empty input explicitly in shell."),
+    (
+        "SHP006",
+        re.compile(r"(?<![\w.-])(?<!git )grep(?:\s+-\S+)*?\s+(?:-[a-zA-Z]*P[a-zA-Z]*|--perl-regexp)(?=\s|$)"),
+        "Avoid GNU `grep -P`; BSD grep rejects it, use `grep -E` instead.",
+    ),
 )
 
 
