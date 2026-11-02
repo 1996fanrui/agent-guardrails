@@ -23,6 +23,7 @@ lint-pep723-header = "agent_guardrails.python.lint_pep723_header:main"
 lint-pre-commit-hook-languages = "agent_guardrails.general.lint_pre_commit_hook_languages:main"
 lint-no-ignored-files = "agent_guardrails.general.lint_no_ignored_files:main"
 lint-shell-portability = "agent_guardrails.shell.lint_shell_portability:main"
+lint-uv-long-running = "agent_guardrails.python.lint_uv_long_running:main"
 uv-lock-check = "agent_guardrails.python.uv_lock_check:main"
 
 [tool.setuptools.packages.find]

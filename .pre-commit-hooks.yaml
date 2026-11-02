@@ -51,6 +51,16 @@
   files: ^\.pre-commit-(?:config|hooks)\.yaml$
   exclude: '^$'
 
+# Long-running services must use `uv run --no-cache`: a long-lived plain `uv run`
+# holds uv's global cache lock, so the cache can never be cleaned. Type=oneshot
+# units exit, so they count as short tasks.
+- id: lint-uv-long-running
+  name: uv run --no-cache in long-running systemd services
+  language: python
+  entry: lint-uv-long-running
+  types: [text]
+  files: '\.service$'
+
 - id: lint-no-ignored-files
   name: No gitignored files in staging
   language: python
