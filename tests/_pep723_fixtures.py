@@ -7,7 +7,7 @@ package.
 The hook enforces three things on every scanned file:
   1) a PEP 723 `# /// script` block,
   2) a single `>=X.Y` requires-python (>= baseline 3.10),
-  3) a module docstring that contains `uv run <self-filename>`.
+  3) a module docstring that contains `uv run [--no-cache] <self-filename>`.
 
 Fixtures are constructed by `pep723_fixture()` rather than indented f-strings
 because `textwrap.dedent()` (used by `_write_file` in the test helpers)
