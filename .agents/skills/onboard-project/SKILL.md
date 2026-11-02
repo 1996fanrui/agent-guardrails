@@ -85,6 +85,7 @@ Read `.pre-commit-hooks.yaml` from agent-guardrails and select hooks based on pr
 | `lint-no-chinese` | Project prohibits Chinese in source code |
 | `lint-shell-portability` | Project has `.sh` files |
 | `lint-enum-redundant-string` | Project has Python code |
+| `lint-uv-long-running` | Project has systemd `.service` files that run `uv run` |
 | `lint-pre-commit-hook-languages` | **Never** for consumer projects — this is for hook repos only |
 
 ## Step 4: Determine Excludes For `lint-no-chinese`
