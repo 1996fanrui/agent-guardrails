@@ -280,6 +280,7 @@ def test_lint_file_line_count_validates_scope(
         ("lint-no-ignored-files", "No gitignored files in staging"),
         ("lint-pre-commit-hook-languages", "Pre-commit hook language selection"),
         ("lint-pep723-header", "PEP 723 header compliance"),
+        ("lint-uv-long-running", "uv run --no-cache in long-running systemd services"),
     ),
 )
 def test_repository_contents_pass_custom_hooks(
@@ -316,6 +317,7 @@ def test_repository_self_check_config_runs_current_repo_hooks(
     assert "No gitignored files in staging" in output
     assert "Pre-commit hook language selection" in output
     assert "PEP 723 header compliance" in output
+    assert "uv run --no-cache in long-running systemd services" in output
 
 
 def test_lint_enum_redundant_string_validates_scope(
