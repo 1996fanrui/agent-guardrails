@@ -752,7 +752,7 @@ def test_lint_pep723_header_rejects_docstring_without_uv_run_example(
     )
     assert failing_result.returncode == 1, _combined_output(failing_result)
     output = _combined_output(failing_result)
-    assert f"`uv run {_BAD_FILENAME}` invocation example" in output
+    assert f"`uv run {_BAD_FILENAME}` or `uv run --no-cache {_BAD_FILENAME}`" in output
 
 
 def test_lint_pep723_header_accepts_consumer_override(

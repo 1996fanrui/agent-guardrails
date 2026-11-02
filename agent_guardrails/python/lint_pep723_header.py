@@ -22,7 +22,8 @@ Rules (each scanned file must satisfy all):
    etc.).
 4. The declared version is ``>=`` the configured baseline (default ``3.10``).
 5. The file has a module docstring, and the docstring mentions
-   ``uv run <this-filename>`` so users can copy-paste the invocation.
+   ``uv run <this-filename>`` or, for long-running services,
+   ``uv run --no-cache <this-filename>`` so users can copy-paste the invocation.
 
 Version parsing and comparison go through PyPA's ``packaging`` library so all
 PEP 440 forms (``3``, ``3.10``, ``3.10.1``, pre/post releases, whitespace) are
@@ -122,7 +123,7 @@ def _validate_requires_python(path: Path, raw: str, baseline: Version) -> list[s
 
 
 def _validate_docstring(path: Path, source: str) -> list[str]:
-    """Check that the file has a module docstring mentioning ``uv run <self>``."""
+    """Check that the docstring mentions ``uv run [--no-cache] <self>``."""
     try:
         tree = ast.parse(source)
     except SyntaxError as exc:
@@ -136,12 +137,15 @@ def _validate_docstring(path: Path, source: str) -> list[str]:
             f"the script via `uv run`)"
         ]
 
-    expected = f"uv run {path.name}"
-    if expected not in docstring:
+    short_task = f"uv run {path.name}"
+    long_running = f"uv run --no-cache {path.name}"
+    if short_task not in docstring and long_running not in docstring:
         return [
-            f"{path}: docstring is missing a `{expected}` invocation example\n"
-            f"  (portable scripts must show the canonical `uv run <self>` "
-            f"command so users can copy-paste it)"
+            f"{path}: docstring is missing a `{short_task}` or `{long_running}` "
+            f"invocation example\n"
+            f"  (portable scripts must show the canonical `uv run <self>` command, "
+            f"or `uv run --no-cache <self>` for long-running services, so users "
+            f"can copy-paste it)"
         ]
 
     return []
